@@ -140,3 +140,5 @@ C:\Users\Saad\source\repos\Chat-App\Chat-App\obj\Debug\net8.0\refint\Chat-App.dl
 C:\Users\Saad\source\repos\Chat-App\Chat-App\obj\Debug\net8.0\Chat-App.pdb
 C:\Users\Saad\source\repos\Chat-App\Chat-App\obj\Debug\net8.0\Chat-App.genruntimeconfig.cache
 C:\Users\Saad\source\repos\Chat-App\Chat-App\obj\Debug\net8.0\ref\Chat-App.dll
+C:\Users\Saad\source\repos\Chat-App\Chat-App\obj\Debug\net8.0\Chat-App.sourcelink.json
+C:\Users\Saad\source\repos\Chat-App\Chat-App\bin\Debug\net8.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
