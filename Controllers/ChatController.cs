@@ -1,9 +1,11 @@
-﻿using Chat_App.Models;
+﻿using Chat_App.Code;
+using Chat_App.Models;
 using Chat_App.Models.DTOs;
 using Chat_App.Services;
 using Chat_App.Services.Base;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 
 namespace Chat_App.Controllers;
 
@@ -14,6 +16,7 @@ public class ChatController : Controller
     private readonly UserManager<User> _userManager;
     private readonly IChatRepository _chatRepository;
     private readonly IUserRepository _userRepo;
+    private readonly WebSocketHandler _webSocketHandler ;
     public ChatController(IRepository<Profile> profile, IRepository<Message> message, UserManager<User> userManager, IChatRepository chatRepository, IUserRepository userRepo)
     {
         _profile = profile;
@@ -21,6 +24,7 @@ public class ChatController : Controller
         _userManager = userManager;
         _chatRepository = chatRepository;
         _userRepo = userRepo;
+        _webSocketHandler = new WebSocketHandler();
 
     }
     [HttpPost("GetChatThumbnails")]
@@ -99,16 +103,13 @@ public class ChatController : Controller
 
         if (chat == null)
         {
-            // Create a new chat if it doesn't exist
             chat = new Chat
             {
                 Participants = new List<User> { currentUser, otherUser },
                 Messages = new List<Message>()
             };
-            // You might want to save this new chat to the database here
              await _chatRepository.SaveAsync(chat);
         }
-
         var response = new Response
         {
             Result = new ChatResponseModel
@@ -200,6 +201,25 @@ public class ChatController : Controller
             Success = true,
             Message = "Message sent successfully"
         };
+  //      export interface MessageModel
+  //  {
+  //      id: number;
+  //  content: string;
+  //  senderUserId: string;
+  //  receiverUserId: string;
+  //  sentTime: string;
+  //  readTime: string;
+  //  readStatus: boolean;
+  //}
+    var messagePayload = new
+        {
+            id = message.Id,
+            content = message.Content,
+            senderUserId = request.SenderId,
+            receiverUserId = request.ReceiverId,
+            sentTime = message.SentTime
+        };
+        await _webSocketHandler.SendMessageToUserAsync(request.ReceiverId, JsonConvert.SerializeObject(messagePayload));
 
         return Ok(response);
     }
