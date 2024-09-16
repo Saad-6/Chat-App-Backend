@@ -11,8 +11,9 @@ public interface IUserRepository : IRepository<User>
     Task<IList<Contact>> GetContactsAsync(string UserId);
     Task<User> GetByPhoneAsync(string phone);
     Task<User> GetByPhoneOrEmailAsync(string query);
+    Task<string> GetUserNameByIdAsync(string userId);
     Task<string> GetUserIdByPhoneOrEmailAsync(string query);
     Task<bool> AddUserAsync(User user);
     Task<bool> UpdateUserAsync(User user);
-
+    Task<string> GetUserPictureByIdAsync(string userId);
 }

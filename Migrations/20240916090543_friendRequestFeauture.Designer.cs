@@ -4,6 +4,7 @@ using Chat_App.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Chat_App.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240916090543_friendRequestFeauture")]
+    partial class friendRequestFeauture
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -34,7 +37,7 @@ namespace Chat_App.Migrations
 
                     b.HasIndex("ParticipantsId");
 
-                    b.ToTable("ChatUser", (string)null);
+                    b.ToTable("ChatUser");
                 });
 
             modelBuilder.Entity("Chat_App.Models.Chat", b =>
@@ -47,7 +50,7 @@ namespace Chat_App.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Chats", (string)null);
+                    b.ToTable("Chats");
                 });
 
             modelBuilder.Entity("Chat_App.Models.Contact", b =>
@@ -77,7 +80,7 @@ namespace Chat_App.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Contact", (string)null);
+                    b.ToTable("Contact");
                 });
 
             modelBuilder.Entity("Chat_App.Models.ContactList", b =>
@@ -95,7 +98,7 @@ namespace Chat_App.Migrations
 
                     b.HasIndex("OwnerId");
 
-                    b.ToTable("ContactLists", (string)null);
+                    b.ToTable("ContactLists");
                 });
 
             modelBuilder.Entity("Chat_App.Models.FriendRequest", b =>
@@ -114,20 +117,12 @@ namespace Chat_App.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("SenderName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("SenderPicture")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.ToTable("FriendRequests", (string)null);
+                    b.ToTable("FriendRequests");
                 });
 
             modelBuilder.Entity("Chat_App.Models.Message", b =>
@@ -167,7 +162,7 @@ namespace Chat_App.Migrations
 
                     b.HasIndex("SenderUserId");
 
-                    b.ToTable("Messages", (string)null);
+                    b.ToTable("Messages");
                 });
 
             modelBuilder.Entity("Chat_App.Models.Profile", b =>
@@ -192,7 +187,7 @@ namespace Chat_App.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Profiles", (string)null);
+                    b.ToTable("Profiles");
                 });
 
             modelBuilder.Entity("Chat_App.Models.User", b =>

@@ -201,16 +201,6 @@ public class ChatController : Controller
             Success = true,
             Message = "Message sent successfully"
         };
-  //      export interface MessageModel
-  //  {
-  //      id: number;
-  //  content: string;
-  //  senderUserId: string;
-  //  receiverUserId: string;
-  //  sentTime: string;
-  //  readTime: string;
-  //  readStatus: boolean;
-  //}
     var messagePayload = new
         {
             id = message.Id,

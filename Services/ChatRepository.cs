@@ -49,6 +49,7 @@ public class ChatRepository : Repository<Chat>, IChatRepository
      .Where(m => m.ChatId == chatId)
      .OrderByDescending(m => m.SentTime)
      .FirstOrDefaultAsync();
+
     }
 
     public async Task<Message> GetMessageByIdAsync(int messageId)

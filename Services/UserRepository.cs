@@ -61,7 +61,6 @@ public class UserRepository : Repository<User>, IUserRepository
         if (Utility.Null(phone)) return null;
         return await _dbSet.FirstOrDefaultAsync(u => u.PhoneNumber == phone);
     }
-
     public async Task<IList<Contact>> GetContactsAsync(string userId)
     {
         if(Utility.Null(userId)) return null;
@@ -69,10 +68,17 @@ public class UserRepository : Repository<User>, IUserRepository
         if(Utility.Null(user)) return null;
         return user.Contacts;
     }
-
     public async Task<string> GetUserIdByPhoneOrEmailAsync(string query)
     {
         var user = await GetByPhoneOrEmailAsync(query);
         return user.Id;
+    }
+    public async Task<string> GetUserNameByIdAsync(string userId)
+    {
+        return await _dbSet.Where(m=>m.Id == userId).Select(m => m.UserName).FirstOrDefaultAsync();
+    }
+    public async Task<string> GetUserPictureByIdAsync(string userId)
+    {
+        return await _dbSet.Where(m => m.Id == userId).Select(m => m.Profile.ProfilePicture).FirstOrDefaultAsync();
     }
 }

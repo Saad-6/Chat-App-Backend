@@ -10,4 +10,5 @@ public class User : IdentityUser
     public IList<Contact>? Contacts { get; set; } = new List<Contact>();
     public IList<Chat>? Chats { get; set; } = new List<Chat>();
     public Profile? Profile { get; set; } = new Profile();
+    
 }
