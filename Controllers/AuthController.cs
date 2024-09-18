@@ -218,7 +218,7 @@ public class AuthController : Controller
             RecieverId = recieverUser.Id,
             SenderName = senderUser.Name,
             SenderPicture = "Will change this later"
-        }; // works so fat
+        }; 
         try
         {
             await _friendRequest.SaveAsync(friendRequest);
@@ -231,7 +231,7 @@ public class AuthController : Controller
                 Console.Error.WriteLine($"Inner Exception: {ex.InnerException.Message}");
             }
         }
-
+        // For some reason uncommenting these lines causes the endppoint to run twice
         //response.Success = true;
         //response.Message = "Request Sent!";
         return Ok(response);

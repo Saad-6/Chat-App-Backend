@@ -74,6 +74,15 @@ public class ChatController : Controller
         return Ok(response);
     }
 
+    [HttpPost("GetOnlineStatus")]
+    public async Task<IActionResult> GetOnlineStatus([FromBody] UserDTO model)
+    {
+        
+        var response = new Response();
+        response.Success = true;
+        response.Result =  await _webSocketHandler.UserIsOnline(model.Id);
+        return Ok(response);
+    }
     [HttpPost("GetChatMessages")]
     public async Task<IActionResult> GetChatMessages([FromBody] ChatRequestModel request)
     {

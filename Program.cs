@@ -65,7 +65,6 @@ app.Use(async (context, next) =>
         var webSocket = await context.WebSockets.AcceptWebSocketAsync();
         var webSocketHandler = context.RequestServices.GetRequiredService<WebSocketHandler>();
         var userId = context.Request.Query["userId"].ToString();
-
         await webSocketHandler.HandleWebSocketAsync(webSocket, userId);
     }
     else
@@ -73,6 +72,7 @@ app.Use(async (context, next) =>
         await next(); 
     }
 });
+
 
 app.MapControllers();
 
