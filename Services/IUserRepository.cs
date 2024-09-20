@@ -8,6 +8,7 @@ public interface IUserRepository : IRepository<User>
     Task<User> GetByEmailAsync(string email);
     Task<bool> UserExists(string email = "", string phone = "");
     Task<User> GetByIdAsync(string id);
+    Task<List<User>> GetUsersInBulkAsync(List<string> userIds);
     Task<IList<Contact>> GetContactsAsync(string UserId);
     Task<User> GetByPhoneAsync(string phone);
     Task<User> GetByPhoneOrEmailAsync(string query);
@@ -16,4 +17,5 @@ public interface IUserRepository : IRepository<User>
     Task<bool> AddUserAsync(User user);
     Task<bool> UpdateUserAsync(User user);
     Task<string> GetUserPictureByIdAsync(string userId);
+    Task<Dictionary<string, string>> GetUserIdsByEmailAsync(List<string> queries);
 }

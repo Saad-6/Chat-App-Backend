@@ -6,8 +6,6 @@ using Chat_App.Services;
 using Chat_App.Services.Base;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.ComponentModel;
 
 namespace Chat_App.Controllers;
 public class AuthController : Controller
@@ -63,15 +61,18 @@ public class AuthController : Controller
         }
         try
         {
-            var user = new User();
-            user.Email = formData.Email;
-            user.PhoneNumber = formData.Phone;
-            user.Name = formData.FullName;
-            user.UserName = formData.FullName;
+            var user = new User()
+            {
+                Email = formData.Email,
+                PhoneNumber = formData.Phone,
+                Name = formData.FullName,
+                UserName = formData.FullName,
+            };
+           
             var result = await _userManager.CreateAsync(user, formData.Password);
             if (!result.Succeeded)
             {
-                respone.Message = result.Errors.FirstOrDefault().Description;
+                respone.Message = result.Errors?.FirstOrDefault()?.Description;
                 return BadRequest(respone);
             }
             var profile = new Profile()
@@ -97,30 +98,34 @@ public class AuthController : Controller
             return BadRequest();
         }
         var user = await _userRepo.GetByPhoneOrEmailAsync(query.EmailOrPhone);
-        // Make search user invisble if he has already been sent a friend request by the querying user
-        var requestsSent = await _friendRequest.GetRequestBySearchParameterAsync("SenderId", query.UserId);
-        foreach(var request in requestsSent)
+        var response = new Response()
         {
-            if(request.RecieverId == user?.Id)
+            Success = true,
+            Result = user
+        };
+        // Make search user invisble if he has already been sent a friend request by the querying user
+        var requestsSent = await _friendRequest.GetRequestBySearchParameterAsync("SenderId", query.UserId,true) as List<FriendRequest>;
+        if (requestsSent?.Count > 0)
+        {
+            foreach (var request in requestsSent)
             {
-                user = null;
+                if (request.RecieverId == user?.Id)
+                {
+                    response.Result = null;
+                    return Ok(response);
+                }
             }
         }
         // Get the required user by search query ( query.EmailOrPhone)
         // Get the current user (query.UserId) 
         // Check the current user's contacts and search if any of those contacts have an email that matches that of the searched user
         // If a match is found, meaning the searched user is already one  of the contacts so , make the result null
-
         var contactExists = (await _userRepo.GetByIdAsync(query.UserId))?.Contacts?.Any(contact => contact.ContactEmail == user?.Email);
-        if (contactExists == true || user.Id == query.UserId)
+        if (contactExists == true || user?.Id == query.UserId)
         {
-            user = null;
+            response.Result = null;
         }
-        var response = new Response()
-        {
-            Success = true,
-            Result = user
-        };
+    
         return Ok(response);
     }
 
@@ -131,18 +136,20 @@ public class AuthController : Controller
         var friendRequests = new List<FriendRequest>();
         var friendRequestResponseModel = new List<FriendRequestDTO>(); 
         
-        friendRequests = await _friendRequest.GetRequestBySearchParameterAsync("RecieverId", userId);
-        foreach (var friendRequest in friendRequests)
+        friendRequests = await _friendRequest.GetRequestBySearchParameterAsync("RecieverId", userId,true) as List<FriendRequest>;
+        if (friendRequests?.Count > 0)
         {
-            if(friendRequest.Status == FriendRequestStatus.Pending)
+            foreach (var friendRequest in friendRequests)
             {
-            friendRequestResponseModel.Add(new FriendRequestDTO
-            {
-                avatar = friendRequest.SenderPicture,
-                id = friendRequest.Id,
-                name = friendRequest.SenderName
-            });
-
+                if (friendRequest.Status == FriendRequestStatus.Pending)
+                {
+                    friendRequestResponseModel.Add(new FriendRequestDTO
+                    {
+                        avatar = friendRequest.SenderPicture,
+                        id = friendRequest.Id,
+                        name = friendRequest.SenderName
+                    });
+                }
             }
         }
         var response = new Response()
@@ -155,63 +162,61 @@ public class AuthController : Controller
     [HttpPost("FriendRequests/accept")]
     public async Task<IActionResult> AcceptFriendRequests([FromBody] FriendRequestDTO request)
     {
-    var friendRequest = await _friendRequest.LoadByIdAsync(request.id);
+        var friendRequest = await _friendRequest.LoadByIdAsync(request.id);
+        if (friendRequest == null) return NotFound("Friend request not found.");
+
         friendRequest.Status = FriendRequestStatus.Accepted;
         await _friendRequest.DeleteAsync(friendRequest);
+
         var senderUser = await _userRepo.GetByIdAsync(friendRequest.SenderId);
-        var recieverUser = await _userRepo.GetByIdAsync(friendRequest.RecieverId);
-        var recieverContact = new Contact()
-        {
-            ContactEmail = senderUser.Email,
-            ContactName = senderUser.Name,
-            ContactPhone = senderUser.PhoneNumber,
-            ContactPicture = senderUser?.Profile?.ProfilePicture
-        };
-        var senderContact = new Contact()
-        {
-            ContactEmail = recieverUser.Email,
-            ContactName = recieverUser.Name,
-            ContactPhone = recieverUser.PhoneNumber,
-            ContactPicture = recieverUser?.Profile?.ProfilePicture
-        };
-        senderUser?.Contacts?.Add(senderContact);
-        recieverUser?.Contacts?.Add(recieverContact);
+        var receiverUser = await _userRepo.GetByIdAsync(friendRequest.RecieverId);
+
+        if (senderUser == null || receiverUser == null) return NotFound("Users not found.");
+
+        AddContact(senderUser, receiverUser);
+        AddContact(receiverUser, senderUser);
+
         await _userRepo.UpdateUserAsync(senderUser);
-        await _userRepo.UpdateUserAsync(recieverUser);
-        var response = new Response()
-        {
-            Success = true
-        };
-        return Ok(response);
+        await _userRepo.UpdateUserAsync(receiverUser);
+
+        return Ok(new { Success = true });
     }
+    private void AddContact(User user, User contactUser)
+    {
+        var contact = new Contact
+        {
+            ContactEmail = contactUser.Email,
+            ContactName = contactUser.Name,
+            ContactPhone = contactUser.PhoneNumber,
+            ContactPicture = contactUser?.Profile?.ProfilePicture
+        };
+        user?.Contacts?.Add(contact);
+    }
+
     [HttpPost("FriendRequests/reject")]
     public async Task<IActionResult> RejectFriendRequests([FromBody] FriendRequestDTO request)
     {
-        var friendRequest = await _friendRequest.LoadByIdAsync(request.id);
+       var friendRequest = await _friendRequest.LoadByIdAsync(request.id);
        await  _friendRequest.DeleteAsync(friendRequest);
-        var response = new Response()
-        {
-            Success = true
-        };
-        return Ok(response);
+
+        return Ok(new Response { Success = true});
     }
     [HttpPost("SendRequest")]
-    public async Task<IActionResult> SendRequest([FromBody] AddContact model)
+    public async Task<IActionResult> SendRequest([FromBody] ParticipantsDTO model)
     {
-        var response = new Response();
-        if (model.SenderUserId == null || model.RecieverUserId == null) return BadRequest();
-        var senderUser = await _userRepo.GetByIdAsync(model.SenderUserId);
-        var recieverUser = await _userRepo.GetByIdAsync(model.RecieverUserId);
-        if(senderUser.Contacts.Any(m=>m.ContactEmail == recieverUser.Email))
+        var response = new Response()
         {
-            return BadRequest(response);
-        }
-        if(senderUser == null || recieverUser == null || (senderUser.Id == recieverUser.Id))
-        {
-            response.Success = false;
-            response.Message = "User(s) not found";
-            return BadRequest(response);
-        } 
+            Success = false,
+            Message = "One or more users not found"
+        };
+        if (model.SenderUserId == null || model.RecieverUserId == null) return BadRequest(response);
+
+        var users = await _userRepo.GetUsersInBulkAsync([model.SenderUserId, model.RecieverUserId]);
+        var senderUser =  users.Where(m=>m.Id == model.SenderUserId).FirstOrDefault();
+        var recieverUser = users.Where(m => m.Id == model.RecieverUserId).FirstOrDefault();
+
+        if((senderUser == null || recieverUser == null) || (senderUser.Contacts.Any(m => m.ContactEmail == recieverUser.Email))) return BadRequest(response);
+
         var friendRequest = new FriendRequest()
         {
             SenderId = senderUser.Id,
@@ -219,18 +224,8 @@ public class AuthController : Controller
             SenderName = senderUser.Name,
             SenderPicture = "Will change this later"
         }; 
-        try
-        {
             await _friendRequest.SaveAsync(friendRequest);
-        }
-        catch (DbUpdateException ex) 
-        {
-
-            if (ex.InnerException != null)
-            {
-                Console.Error.WriteLine($"Inner Exception: {ex.InnerException.Message}");
-            }
-        }
+           
         // For some reason uncommenting these lines causes the endppoint to run twice
         //response.Success = true;
         //response.Message = "Request Sent!";
@@ -239,17 +234,18 @@ public class AuthController : Controller
     [HttpPost("Login")]
     public async Task<IActionResult> Login([FromBody] LoginRequestDTO formData)
     {
+
         var respone = new Response()
         {
             Success = false
         };
-        var user = await _userRepo.GetByEmailAsync(formData.Email);
-        if (formData == null)
+        if (formData.Email == null || formData.Password == null)
         {
             respone.Message = "Form Data is not valid";
             return BadRequest(respone);
         }
-        else if (user == null)
+        var user = await _userRepo.GetByEmailAsync(formData.Email);
+        if (user == null)
         {
             respone.Message = "User does not exist";
             return BadRequest(respone);

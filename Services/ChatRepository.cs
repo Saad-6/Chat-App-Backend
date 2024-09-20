@@ -3,6 +3,7 @@ using Chat_App.Data;
 using Chat_App.Models;
 using Chat_App.Services.Base;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace Chat_App.Services;
 
@@ -36,12 +37,14 @@ public class ChatRepository : Repository<Chat>, IChatRepository
     {
         if (Utility.Null(participants)) return null;
         var query = _dbSetChat
-            .Include(c => c.Participants) 
-            .Include(c=>c.Messages)
-            .Where(c => c.Participants.All(p => participants.Contains(p.Id)));
-        return await query.FirstOrDefaultAsync();
+         .Include(c => c.Participants)
+         .Include(c => c.Messages)
+         // Ensure the chat has the same number of participants
+         .Where(c => c.Participants.Count == participants.Count &&
+                     // Ensure every participant in the chat is in the provided list
+                     c.Participants.All(p => participants.Contains(p.Id)));
+        return await query.FirstOrDefaultAsync() ?? null;
     }
-
     public async Task<Message> GetLastMessageAsync(int chatId)
     {
         if (Utility.Null(chatId)) return null;
@@ -51,7 +54,20 @@ public class ChatRepository : Repository<Chat>, IChatRepository
      .FirstOrDefaultAsync();
 
     }
+    public async Task<Dictionary<int, Message>> GetLastMessagesInBulkAsync(List<int> chatIds)
+    {
+        if (chatIds == null || !chatIds.Any()) return new Dictionary<int, Message>();
 
+        var lastMessages = await _dbSetMessage
+            .Where(m => chatIds.Contains(m.ChatId))   
+            .GroupBy(m => m.ChatId)                  
+            .Select(g => g.OrderByDescending(m => m.SentTime).FirstOrDefault()) 
+            .ToListAsync();
+
+        return lastMessages
+            .Where(m => m != null) 
+            .ToDictionary(m => m.ChatId, m => m);
+    }
     public async Task<Message> GetMessageByIdAsync(int messageId)
     {
         if (Utility.Null(messageId)) return null;

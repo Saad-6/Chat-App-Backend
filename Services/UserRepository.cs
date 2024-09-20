@@ -16,12 +16,20 @@ public class UserRepository : Repository<User>, IUserRepository
         _context = context;
         _dbSet = _context.Set<User>();
     }
-
     public async Task<bool> AddUserAsync(User user)
     {
         if(Utility.Null(user)) return false;
         var result = await SaveAsync(user); 
         return result;
+    }
+    public async Task<List<User>> GetUsersInBulkAsync(List<string> userIds)
+    {
+        if (userIds == null || userIds.Count == 0) return new List<User>();
+
+        return await _dbSet.Where(u => userIds.Contains(u.Id))
+            .Include(m=>m.Contacts)
+            .Include(m=>m.Profile)
+            .ToListAsync();
     }
     public async Task<bool> UserExists(string email = "", string phone = "")
     {
@@ -45,21 +53,24 @@ public class UserRepository : Repository<User>, IUserRepository
     public async Task<User> GetByEmailAsync(string email)
     {
         if(Utility.Null(email)) return null;
-        return await _dbSet.FirstOrDefaultAsync(u => u.Email == email);
-    }
+        var alsoUser = await GetRequestBySearchParameterAsync("Email", email,false,"Contacts","Profile");
+        var user = alsoUser as User;
 
+        return user;
+    }
     public async Task<User> GetByIdAsync(string id)
     {
         if (Utility.Null(id)) return null;
-        return await _dbSet
-        .Include(u => u.Contacts)
-        .Include(u=>u.Profile)
-        .FirstOrDefaultAsync(u => u.Id == id);
+        var alsoUser = await GetRequestBySearchParameterAsync("Id", id, false, "Contacts", "Profile");
+        var user = alsoUser as User;
+        return user != null ? user : new User();
     }
     public async Task<User> GetByPhoneAsync(string phone)
     {
         if (Utility.Null(phone)) return null;
-        return await _dbSet.FirstOrDefaultAsync(u => u.PhoneNumber == phone);
+        var alsoUser = await GetRequestBySearchParameterAsync("PhoneNumber", phone, false, "Contacts", "Profile");
+        var user = alsoUser as User;
+        return user != null ? user : new User();
     }
     public async Task<IList<Contact>> GetContactsAsync(string userId)
     {
@@ -73,12 +84,25 @@ public class UserRepository : Repository<User>, IUserRepository
         var user = await GetByPhoneOrEmailAsync(query);
         return user.Id;
     }
+    public async Task<Dictionary<string, string>> GetUserIdsByEmailAsync(List<string> queries)
+    {
+        if (queries == null || !queries.Any()) return new Dictionary<string, string>();
+
+        var users = await _dbSet
+            .Where(u => queries.Contains(u.Email) || queries.Contains(u.PhoneNumber)) 
+            .ToListAsync();
+
+        return users.ToDictionary(u => u.Email ?? u.PhoneNumber, u => u.Id);
+    }
+
     public async Task<string> GetUserNameByIdAsync(string userId)
     {
-        return await _dbSet.Where(m=>m.Id == userId).Select(m => m.UserName).FirstOrDefaultAsync();
+        var userName = await _dbSet.Where(m => m.Id == userId).Select(m => m.UserName).FirstOrDefaultAsync() ?? "Unknown user";
+        return userName;
     }
     public async Task<string> GetUserPictureByIdAsync(string userId)
     {
-        return await _dbSet.Where(m => m.Id == userId).Select(m => m.Profile.ProfilePicture).FirstOrDefaultAsync();
+        var userPicture = await _dbSet.Where(m => m.Id == userId).Select(m => m.Profile.ProfilePicture).FirstOrDefaultAsync() ?? "No Picture Found";
+        return userPicture;
     }
 }

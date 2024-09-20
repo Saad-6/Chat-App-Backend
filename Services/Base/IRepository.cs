@@ -7,5 +7,5 @@ public interface IRepository<TEntity> where TEntity : class
     Task<bool> SaveAsync(TEntity entity);
     Task<bool> UpdateAsync(TEntity entity);
     Task<bool> DeleteAsync(TEntity entity);
-    Task<List<TEntity>> GetRequestBySearchParameterAsync(string propertyName, object searchparameter);
+    Task<object> GetRequestBySearchParameterAsync(string propertyName, object searchparameter,bool isList, params string[] includes);
 }

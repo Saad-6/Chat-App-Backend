@@ -24,7 +24,6 @@ public class WebSocketHandler
         RemoveConnection(userId);
         await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
     }
-
     public async Task<bool> UserIsOnline (string userId)
     {
         if (_connections.TryGetValue(userId, out WebSocket webSocket))
@@ -35,7 +34,14 @@ public class WebSocketHandler
     }
     public void AddConnection(string userId, WebSocket webSocket)
     {
+        if (_connections.ContainsKey(userId))
+        {
+            Console.WriteLine($"User ID {userId} already exists. Connection not added.");
+            return; // Exit the method if the user already has a connection
+        }
+
         _connections[userId] = webSocket;
+        Console.WriteLine($"Added connection for User ID {userId}");
     }
     public void RemoveConnection(string userId)
     {
@@ -48,8 +54,12 @@ public class WebSocketHandler
         {
             var messageBuffer = Encoding.UTF8.GetBytes(message);
             var messageSegment = new ArraySegment<byte>(messageBuffer);
-
             await webSocket.SendAsync(messageSegment, WebSocketMessageType.Text, true, CancellationToken.None);
         }
+    }
+
+    public async Task RingCall()
+    {
+
     }
 }
